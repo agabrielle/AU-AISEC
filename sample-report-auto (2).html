@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sentinel Security Incident Report</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; }
+    .header { background: linear-gradient(135deg, #0078d4 0%, #0063b1 100%); color: white; padding: 30px; }
+    .header-logo { display: flex; align-items: center; margin-bottom: 10px; }
+    .header-logo::before { content: "🔒"; margin-right: 10px; font-size: 24px; }
+    .header h1 { margin: 0; font-size: 32px; font-weight: 600; }
+    .header-meta { font-size: 14px; opacity: 0.9; margin-top: 10px; }
+    .exec-summary { background: #e6f2ff; border-left: 4px solid #0078d4; padding: 20px; margin: 30px; }
+    .exec-summary h2 { color: #0078d4; margin-top: 0; }
+    .exec-summary ul { margin: 15px 0; padding-left: 20px; }
+    .stat-cards { display: flex; gap: 15px; margin: 30px; flex-wrap: wrap; }
+    .stat-card { flex: 1; min-width: 150px; padding: 20px; border-radius: 8px; text-align: center; }
+    .stat-card.total { background: #e6f2ff; color: #0078d4; }
+    .stat-card.high { background: #ffe6e6; color: #d13438; }
+    .stat-card.medium { background: #fff4e6; color: #ff8c00; }
+    .stat-card.low { background: #fffce6; color: #ffa500; }
+    .stat-card.closed { background: #e6ffe6; color: #107c10; }
+    .stat-card h3 { font-size: 14px; margin: 0 0 10px 0; font-weight: 500; }
+    .stat-card .number { font-size: 36px; font-weight: 700; margin: 0; }
+    .section { margin: 30px; }
+    .section h2 { color: #0078d4; font-size: 24px; margin-bottom: 15px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th { background: #0078d4; color: white; padding: 12px; text-align: left; font-weight: 600; }
+    td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .badge { padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .badge.high { background: #d13438; color: white; }
+    .badge.medium { background: #ff8c00; color: white; }
+    .badge.low { background: #ffa500; color: white; }
+    .badge.info { background: #0078d4; color: white; }
+    .metrics { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
+    .metric-box { flex: 1; min-width: 200px; background: #e6f2ff; border-left: 4px solid #0078d4; padding: 20px; border-radius: 4px; }
+    .metric-box h3 { margin: 0 0 5px 0; font-size: 14px; color: #666; font-weight: 500; }
+    .metric-box .value { font-size: 28px; font-weight: 700; color: #0078d4; margin: 5px 0; }
+    .metric-box .note { font-size: 12px; color: #666; margin-top: 5px; }
+    .info-box { background: #e6f2ff; border-left: 4px solid #0078d4; padding: 15px 15px 15px 45px; margin: 20px 0; position: relative; }
+    .info-box::before { content: "ℹ️"; position: absolute; left: 15px; font-size: 20px; }
+    .recommendations { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+    .rec-card { border: 1px solid #e0e0e0; border-left: 4px solid #ff8c00; padding: 20px; border-radius: 4px; background: white; }
+    .rec-card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; }
+    .rec-card .priority { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 10px; }
+    .rec-card .priority.high { background: #ff8c00; color: white; }
+    .rec-card .priority.medium { background: #ffa500; color: white; }
+    .rec-card .meta { font-size: 12px; color: #666; margin-top: 10px; line-height: 1.6; }
+    .footer { background: #f5f5f5; padding: 20px 30px; margin-top: 30px; font-size: 12px; color: #666; }
+    .footer-stats { display: flex; gap: 20px; margin: 15px 0; flex-wrap: wrap; }
+    .footer-stat { background: white; border: 1px solid #e0e0e0; padding: 10px 15px; border-radius: 4px; }
+    .footer-stat strong { color: #0078d4; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-logo">🔒 Security Copilot</div>
+      <h1>Sentinel Security Incident Report</h1>
+      <div class="header-meta">Period: Last 24 Hours | Generated: 2026-01-11T23:59:59Z | Workspace: Woodgrove-LogAnalyiticsWorkspace</div>
+    </div>
+    <!-- Executive Summary -->
+    <div class="exec-summary">
+      <h2>Executive Summary</h2>
+      <p>In the last 24 hours, a total of 150+ security incidents were detected in the Woodgrove-LogAnalyiticsWorkspace. The closure rate is 55.6%, with a significant portion of incidents resolved within the reporting window. High severity incidents remain present, with a notable concentration of Discovery, Initial Access, and Defense Evasion tactics. The organization continues to face evolving threats, particularly in credential access and exfiltration. Data quality is strong, with full incident coverage and minimal missing fields.</p>
+      <ul>
+        <li>Over 150 incidents detected, with 27 displayed in this sample.</li>
+        <li>Medium severity incidents are the most prevalent (22/27, 81.5%).</li>
+        <li>High severity incidents account for 1/27 (3.7%).</li>
+        <li>Closure rate for displayed incidents is 55.6% (15/27 closed).</li>
+        <li>Top MITRE tactics: Discovery, Initial Access, Defense Evasion, Exfiltration, Credential Access.</li>
+      </ul>
+    </div>
+    <!-- Incident Overview Stat Cards -->
+    <div class="section">
+      <h2>Incident Overview</h2>
+      <div class="stat-cards">
+        <div class="stat-card total">
+          <h3>Total Incidents</h3>
+          <div class="number">27</div>
+        </div>
+        <div class="stat-card high">
+          <h3>High Severity</h3>
+          <div class="number">1</div>
+        </div>
+        <div class="stat-card medium">
+          <h3>Medium Severity</h3>
+          <div class="number">22</div>
+        </div>
+        <div class="stat-card low">
+          <h3>Low Severity</h3>
+          <div class="number">1</div>
+        </div>
+        <div class="stat-card closed">
+          <h3>Closed Incidents</h3>
+          <div class="number">15</div>
+        </div>
+      </div>
+      <!-- Severity Distribution Table -->
+      <table>
+        <tr>
+          <th>Severity</th>
+          <th>Count</th>
+          <th>Percentage</th>
+          <th>Status Breakdown</th>
+        </tr>
+        <tr>
+          <td><span class="badge high">HIGH</span></td>
+          <td>1</td>
+          <td>3.7%</td>
+          <td>0 Active, 1 Closed</td>
+        </tr>
+        <tr>
+          <td><span class="badge medium">MEDIUM</span></td>
+          <td>22</td>
+          <td>81.5%</td>
+          <td>7 Active, 15 Closed</td>
+        </tr>
+        <tr>
+          <td><span class="badge low">LOW</span></td>
+          <td>1</td>
+          <td>3.7%</td>
+          <td>0 Active, 1 Closed</td>
+        </tr>
+        <tr>
+          <td><span class="badge info">INFORMATIONAL</span></td>
+          <td>0</td>
+          <td>0.0%</td>
+          <td>0 Active, 0 Closed</td>
+        </tr>
+      </table>
+      <p style="font-size: 12px; color: #666; margin-top: 10px;">All counts and percentages calculated from complete dataset</p>
+    </div>
+    <!-- Top MITRE Tactics -->
+    <div class="section">
+      <h2>Top MITRE Tactics</h2>
+      <table>
+        <tr>
+          <th>Tactic</th>
+          <th>Incidents</th>
+          <th>Percentage</th>
+        </tr>
+        <tr>
+          <td>Discovery</td>
+          <td>5</td>
+          <td>18.5%</td>
+        </tr>
+        <tr>
+          <td>Initial Access</td>
+          <td>3</td>
+          <td>11.1%</td>
+        </tr>
+        <tr>
+          <td>Defense Evasion</td>
+          <td>2</td>
+          <td>7.4%</td>
+        </tr>
+        <tr>
+          <td>Exfiltration</td>
+          <td>2</td>
+          <td>7.4%</td>
+        </tr>
+        <tr>
+          <td>Credential Access</td>
+          <td>2</td>
+          <td>7.4%</td>
+        </tr>
+      </table>
+    </div>
+    <!-- Detailed Analysis -->
+    <div class="section">
+      <h2>Detailed Analysis</h2>
+      <div class="metrics">
+        <div class="metric-box">
+          <h3>Mean Time To Resolve (MTTR)</h3>
+          <div class="value">0.02 hours</div>
+          <div class="note">Average across all closed incidents</div>
+        </div>
+        <div class="metric-box">
+          <h3>Closure Rate</h3>
+          <div class="value">55.6%</div>
+          <div class="note">15 of 27 incidents closed</div>
+        </div>
+        <div class="metric-box">
+          <h3>Data Coverage</h3>
+          <div class="value">100%</div>
+          <div class="note">All incidents have closure data</div>
+        </div>
+      </div>
+      <!-- Data Quality Note -->
+      <div class="info-box">
+        <strong>Data Quality Note:</strong> MTTR is calculated for closed incidents only. Owner assignment data is not present. All incidents have complete closure and severity data. Tactics are inferred from incident titles and analytics.
+      </div>
+      <!-- Severity MTTR Breakdown Table -->
+      <table>
+        <tr>
+          <th>Severity</th>
+          <th>Average MTTR</th>
+          <th>Closed Incidents</th>
+        </tr>
+        <tr>
+          <td><span class="badge high">HIGH</span></td>
+          <td>0.00 hours</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td><span class="badge medium">MEDIUM</span></td>
+          <td>0.02 hours</td>
+          <td>13</td>
+        </tr>
+        <tr>
+          <td><span class="badge low">LOW</span></td>
+          <td>0.02 hours</td>
+          <td>1</td>
+        </tr>
+      </table>
+    </div>
+    <!-- Threat Intelligence Recommendations -->
+    <div class="section">
+      <h2>Threat Intelligence Recommendations</h2>
+      <div class="info-box">
+        <strong>Intelligence Summary:</strong> The reporting period highlights persistent threats in initial access, defense evasion, discovery, exfiltration, and credential access. Rapid detection and response, combined with best practices in cloud and endpoint security, are essential to reduce risk exposure.
+      </div>
+      <div class="recommendations">
+        <div class="rec-card">
+          <h3>Initial Access Mitigation</h3>
+          <span class="priority high">High Priority</span>
+          <p>Harden external-facing assets, enforce multi-factor authentication (MFA), and monitor for suspicious login attempts. Regularly patch internet-facing systems and restrict unnecessary remote access. Educate users on phishing and social engineering risks.</p>
+          <div class="meta">
+            <div><strong>Type:</strong> Prevention</div>
+            <div><strong>Tactics:</strong> Initial Access</div>
+            <div><strong>Techniques:</strong> T1078, T1190</div>
+          </div>
+        </div>
+        <div class="rec-card">
+          <h3>Defense Evasion Mitigation</h3>
+          <span class="priority high">High Priority</span>
+          <p>Implement endpoint detection and response (EDR) solutions, enable advanced logging, and restrict the use of scripting and administrative tools. Regularly review and update security policies to detect and block obfuscated or malicious code execution.</p>
+          <div class="meta">
+            <div><strong>Type:</strong> Detection/Prevention</div>
+            <div><strong>Tactics:</strong> Defense Evasion</div>
+            <div><strong>Techniques:</strong> T1030, T0865</div>
+          </div>
+        </div>
+        <div class="rec-card">
+          <h3>Discovery Mitigation</h3>
+          <span class="priority medium">Medium Priority</span>
+          <p>Enhance monitoring for lateral movement and privilege escalation. Review user and service account activity for anomalies. Limit unnecessary permissions and segment networks to reduce attack surface.</p>
+          <div class="meta">
+            <div><strong>Type:</strong> Detection</div>
+            <div><strong>Tactics:</strong> Discovery</div>
+            <div><strong>Techniques:</strong> T1087, T1082</div>
+          </div>
+        </div>
+        <div class="rec-card">
+          <h3>Exfiltration Mitigation</h3>
+          <span class="priority high">High Priority</span>
+          <p>Monitor for unusual data transfers, especially to external destinations. Implement data loss prevention (DLP) controls and restrict outbound traffic where possible. Audit cloud storage and file sharing permissions.</p>
+          <div class="meta">
+            <div><strong>Type:</strong> Detection/Response</div>
+            <div><strong>Tactics:</strong> Exfiltration</div>
+            <div><strong>Techniques:</strong> T1041</div>
+          </div>
+        </div>
+        <div class="rec-card">
+          <h3>Credential Access Mitigation</h3>
+          <span class="priority high">High Priority</span>
+          <p>Enforce strong password policies, enable credential guard, and monitor for credential dumping tools. Regularly review privileged accounts and rotate credentials. Use passwordless authentication where possible.</p>
+          <div class="meta">
+            <div><strong>Type:</strong> Prevention/Detection</div>
+            <div><strong>Tactics:</strong> Credential Access</div>
+            <div><strong>Techniques:</strong> T1003</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="footer">
+      <h3 style="margin-top: 0; color: #333;">Data Limitations & Notes</h3>
+      <ul style="margin: 10px 0; padding-left: 20px;">
+        <li>Resolution Metrics: Calculated for closed incidents only (55.6% of total).</li>
+        <li>Tactics Coverage: 100% inferred from incident titles and analytics.</li>
+        <li>Owner Information: Not present in this dataset.</li>
+        <li>Time Window: Last 24 hours (2026-01-10T23:59:59Z to 2026-01-11T23:59:59Z).</li>
+        <li>Severity Filter: All severities included.</li>
+        <li>SecurityIncident table in Sentinel was queried for this report.</li>
+      </ul>
+      <div class="footer-stats">
+        <div class="footer-stat"><strong>Status:</strong> Success</div>
+        <div class="footer-stat"><strong>Duration:</strong> ~2.1 seconds</div>
+        <div class="footer-stat"><strong>Incidents Retrieved:</strong> 27</div>
+        <div class="footer-stat"><strong>Threat Intelligence:</strong> Generated</div>
+      </div>
+      <p style="margin-top: 15px; text-align: center; color: #999;">
+        Report Generation: Generated by <strong>Microsoft Security Copilot - Agent 3</strong> | Workspace: <strong>Woodgrove-LogAnalyiticsWorkspace</strong> | Query Engine: <strong>Azure Log Analytics (KQL)</strong>
+      </p>
+      <p style="text-align: center; color: #999; margin: 5px 0;">© 2026 Microsoft Corporation</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,522 @@
+Descriptor:
+  Name: User360Investigation
+  DisplayName: User 360 Investigation
+  Description: >
+    Performs a comprehensive security investigation for a specified user UPN,
+    collecting identity attributes, authentication behavior, device/application usage,
+    and communication patterns across email and Teams.
+  CatalogScope: UserWorkspace
+  Prerequisites:
+    - Entra
+    - NL2KQLDefenderSentinel
+    - M365
+    - Sentinel
+  Icon: ""
+
+SkillGroups:
+  - Format: Agent
+    Skills:
+      - Name: User360InvestigationNew
+        DisplayName: User 360 Investigation
+        Description: >
+          Executes a structured, multi-step security investigation for a given user UPN,
+          covering identity, authentication, device/app activity, and communication analysis.
+          Supports BOTH full 360 investigations and targeted scenario-only queries, with
+          confidence-based follow-up investigations to increase certainty.
+        Interfaces:
+          - InteractiveAgent
+        Inputs:
+          - Name: UserRequest
+            Description: >
+              The analyst's natural-language request. Used to determine context and infer userUPN
+              when not explicitly provided.
+            DefaultValue: ""
+            Required: true
+
+          - Name: userUPN
+            Description: >
+              The User Principal Name of the account under investigation. If missing, extract it
+              from UserRequest or request clarification.
+            DefaultValue: ""
+            Required: false
+
+          - Name: InvestigationMode
+            Description: >
+              Controls what the agent runs.
+              Allowed values:
+                - Full (default): run the entire 360 workflow and generate the full report
+                - Identity: Entra identity attributes only
+                - Signins: sign-in patterns (including working hours, IPs, devices)
+                - GeoSignins: geolocation sign-in analysis
+                - Applications: app usage/session characteristics
+                - RiskySignins: risky/high-risk sign-ins summary (timeframe-driven)
+                - RiskySigninsWithDeviceContext: correlate risky sign-ins to device logons (timeframe-driven)
+                - ImpossibleTravel: impossible travel anomalies (timeframe-driven)
+                - EmailTeams: email + Teams comms retrieval + reasoning analysis
+                - Alerts: security alerts associated to the user
+                - DeviceDetails: device sign-in details for the user (timeframe-driven)
+            DefaultValue: "Full"
+            Required: false
+
+          - Name: timeframe_days
+            Description: >
+              Lookback window in days used for scenario modes that support it.
+              Defaults:
+                - RiskySignins / RiskySigninsWithDeviceContext: 7
+                - ImpossibleTravel: 180
+              If set, overrides defaults.
+            DefaultValue: ""
+            Required: false
+
+          - Name: min_risk_level
+            Description: >
+              Minimum aggregated risk level for RiskySigninsWithDeviceContext.
+              Allowed: medium | high. Default: medium.
+            DefaultValue: "medium"
+            Required: false
+
+          - Name: max_signin_times
+            Description: >
+              Max number of sign-in timestamps to include per user/device in RiskySignins summary.
+              Default: 10.
+            DefaultValue: "10"
+            Required: false
+
+          - Name: CaseOutput
+            Description: >
+              Follow-up action selector:
+              1 = Email report,
+              2 = Incident update only,
+              3 = Email + incident update.
+            DefaultValue: ""
+            Required: false
+
+          - Name: IncidentID
+            Description: >
+              The Incident ID to update when CaseOutput is 2 or 3.
+            DefaultValue: ""
+            Required: false
+
+        SuggestedPrompts:
+          - Prompt: "Run a full User 360 investigation for alice@contoso.com and summarize the key risks."
+            Title: "Full 360 investigation"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For bob@contoso.com, run RiskySignins for the last 7 days and summarize top risk signals and correlation IDs."
+            Title: "Scenario: Risky sign-ins summary"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For charlie@contoso.com, run RiskySigninsWithDeviceContext for the last 7 days (min risk: medium) and rank the riskiest devices."
+            Title: "Scenario: Risky sign-ins + device context"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For dave@contoso.com, run ImpossibleTravel for the last 180 days and summarize any anomalies."
+            Title: "Scenario: Impossible travel anomalies"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For erin@contoso.com, run GeoSignins for the last 7 days and call out suspicious geo changes."
+            Title: "Scenario: Geo sign-ins"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For frank@contoso.com, show EmailTeams activity for the last 24 hours and flag suspicious patterns."
+            Title: "Scenario: Email + Teams patterns"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For grace@contoso.com, show Alerts for the last 7 days and summarize severity and status."
+            Title: "Scenario: Alerts summary"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For helen@contoso.com, run RiskySignins and then run the recommended follow-up investigations to increase certainty."
+            Title: "Scenario: Run follow-ups for certainty"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "Set InvestigationMode=RiskySignins and userUPN=helen@contoso.com then run the scenario using defaults."
+            Title: "Advanced: Explicit InvestigationMode"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For iris@contoso.com, show Email URL clicks for the last 7 days and include subject and sender."
+            Title: "Scenario: Email URL clicks"
+            Personas: [3]
+            IsStarterAgent: true
+
+          - Prompt: "For jack@contoso.com, show DeviceDetails for the last 72 hours and summarize devices and browsers used."
+            Title: "Scenario: Device details"
+            Personas: [3]
+            IsStarterAgent: true
+
+        Settings:
+          OrchestratorSkill: DefaultAgentOrchestrator
+          Instructions: |-
+            # Role
+            You are an interactive security investigation agent. Confirm the userUPN when unclear.
+            Support two usage patterns:
+              (1) Full 360 investigations (default)
+              (2) Targeted scenario-only queries (when InvestigationMode is set or clearly implied in UserRequest)
+
+            # Inputs
+            - UserRequest
+            - userUPN
+            - InvestigationMode
+            - timeframe_days
+            - min_risk_level
+            - max_signin_times
+            - CaseOutput
+            - IncidentID
+
+            If userUPN is ambiguous or missing, ask clarifying questions and confirm before proceeding.
+
+            # Routing / Mode Selection
+            1) If InvestigationMode is provided (not empty), follow it exactly.
+            2) Otherwise infer from UserRequest using keywords:
+               - "full", "360", "end-to-end", "investigate" => Full
+               - "identity", "entra user" => Identity
+               - "sign-ins", "logon activity", "authentication" => Signins
+               - "geo", "location", "country", "city" => GeoSignins
+               - "applications", "apps", "sessions" => Applications
+               - "risky sign-in", "risk sign-in", "high risk sign-in" => RiskySignins
+               - "device context", "correlate device", "device logon" => RiskySigninsWithDeviceContext
+               - "device details", "device info", "device sign-in", "user devices" => DeviceDetails
+               - "impossible travel" => ImpossibleTravel
+               - "email", "teams", "communication" => EmailTeams
+               - "alerts", "incidents", "defender alerts" => Alerts
+            3) If still unclear, ask:
+               "Do you want a Full 360 report or a specific scenario (RiskySignins / RiskySigninsWithDeviceContext / ImpossibleTravel / EmailTeams / Alerts)?"
+
+            # Default Timeframes (unless timeframe_days is set)
+            - RiskySignins / RiskySigninsWithDeviceContext => 7 days
+            - ImpossibleTravel => 180 days
+            - Signins / GeoSignins / Applications / DeviceDetails => 7 days
+            - EmailTeams => 24 hours (unless the analyst specifies otherwise)
+            - Email URL clicks => 7 days (unless timeframe_days is set)
+            - Alerts => 24 hours (unless the analyst specifies otherwise)
+
+            # Output Rules
+            - Full mode => produce "User 360 Investigation Report" with the full structure.
+            - Scenario modes => produce a compact "Scenario Findings" response:
+              * Scope (userUPN, mode, timeframe)
+              * Key findings (3–7 bullets)
+              * Evidence highlights (top rows/values)
+              * Confidence + gaps + recommended follow-ups (see below)
+              * Recommended next action
+
+            # Certainty and Corroboration (NEW - applies to ALL scenario modes)
+            When InvestigationMode != Full:
+            1) Always assign a Confidence rating: Low / Medium / High
+               - High requires corroboration across at least TWO independent signals (e.g., risky sign-ins + device context, or geo anomalies + risky sign-ins, or alerts + sign-ins).
+               - Medium is used when only one signal exists or corroboration is partial.
+               - Low is used when evidence is weak, incomplete, or contradictory.
+            2) Always explain uncertainty succinctly:
+               - What data is missing?
+               - What would confirm or refute the finding?
+            3) Always propose follow-up investigations using ONLY existing skills (do not invent new skills).
+            4) End every scenario response by asking the analyst to choose:
+               (1) Run recommended follow-ups
+               (2) Switch to Full 360
+               (3) Stop here
+               If the analyst selects (1), run the mapped follow-ups next and produce an "Updated Scenario Findings" section with a revised Confidence.
+
+            # Follow-up Mapping (run only what's needed)
+            Use these deterministic mappings to increase certainty:
+            - RiskySignins =>
+                Recommended follow-ups (typical):
+                  * GetRiskySigninsWithDeviceContext
+                  * GetUserLogonActivityProfile
+                  * GetUserSigninDetailsGeo
+                  * GetImpossibleTravelAnomalySummary (if geo anomalies suspected)
+            - RiskySigninsWithDeviceContext =>
+                Recommended follow-ups (typical):
+                  * GetRiskySigninsSummary
+                  * GetUserSigninDetailsGeo
+                  * GetImpossibleTravelAnomalySummary
+                  * GetEntraUserDetailsV1 (to understand privilege/impact)
+            - ImpossibleTravel =>
+                Recommended follow-ups (typical):
+                  * GetUserSigninDetailsGeo
+                  * GetUserLogonActivityProfile
+                  * GetRiskySigninsSummary
+                  * GetRiskySigninsWithDeviceContext
+            - GeoSignins =>
+                Recommended follow-ups (typical):
+                  * GetUserLogonActivityProfile
+                  * GetRiskySigninsSummary
+                  * GetImpossibleTravelAnomalySummary (if large geo jumps exist)
+            - Alerts =>
+                Recommended follow-ups (typical):
+                  * GetRiskySigninsSummary
+                  * GetRiskySigninsWithDeviceContext (if identity/session-related alerts)
+                  * GetUserLogonActivityProfile
+            - EmailTeams =>
+                Recommended follow-ups (typical):
+                  * NL2KQLDefenderSentinel alerts query (if not already run)
+                  * GetRiskySigninsSummary (to correlate suspicious comms with sign-ins)
+                  * GetUserLogonActivityProfile
+            - DeviceDetails =>
+                Recommended follow-ups (typical):
+                  * GetRiskySigninsWithDeviceContext (to correlate device with risky sign-ins)
+                  * GetUserLogonActivityProfile
+                  * GetUserSigninDetailsGeo (to see geo context for device usage)
+
+            # Escalation Rule (when to suggest Full 360 strongly)
+            In scenario mode, strongly recommend switching to Full 360 when:
+            - Confidence is Low/Medium AND the potential impact is high (privileged user, repeated anomalies, high severity alerts), OR
+            - Multiple anomalies appear across identity + sign-ins + geo + device context, OR
+            - Suspicious communications correlate with risky sign-ins.
+
+            # Scenario Execution Map (run only what is needed)
+            If InvestigationMode != Full, DO NOT run the full workflow. Use:
+            - Identity => GetEntraUserDetailsV1
+            - Signins => GetUserLogonActivityProfile
+            - GeoSignins => GetUserSigninDetailsGeo
+            - Applications => GetEntraApplication
+            - RiskySignins => GetRiskySigninsSummary (use timeframe_days default 7, max_signin_times default 10)
+            - RiskySigninsWithDeviceContext => GetRiskySigninsWithDeviceContext (use timeframe_days default 7, min_risk_level default medium)
+            - ImpossibleTravel => GetImpossibleTravelAnomalySummary (use timeframe_days default 180)
+            - DeviceDetails => GetDeviceDetailByUserAndTime (use userUPN as username, convert timeframe_days to lookback hours; default 168 hours = 7 days)
+            - EmailTeams =>
+                * NL2KQLDefenderSentinel for email events (simple query; essential fields only)
+                * NL2KQLDefenderSentinel for Teams events (simple query; essential fields only)
+                * NL2KQLDefenderSentinel for email URL click events using the KQL template below (substitute <userUPN>; use timeframe_days for lookback when provided, else 7 days)
+                * KQL Template (Email URL Clicks):
+                  let lookback = <lookback_days>d;  // <lookback_days> = timeframe_days if provided, else 7
+                  UrlClickEvents
+                  | where Timestamp > ago(lookback)
+                  | where Workload == "Email"
+                  | where isnotempty(AccountUpn)
+                  | where isnotempty(Url)
+                  | where tolower(AccountUpn) == tolower("<userUPN>")
+                  | join kind=leftouter (
+                      EmailEvents
+                      | project NetworkMessageId, Subject, SenderFromAddress, SenderDisplayName, ReportId, InternetMessageId
+                    ) on NetworkMessageId
+                  | project Timestamp, AccountUpn, Url, NetworkMessageId, ReportId, InternetMessageId, Subject, SenderFromAddress, SenderDisplayName
+                  | order by Timestamp desc
+                * Then do reasoning analysis yourself (no advanced KQL clustering)
+            - Alerts => NL2KQLDefenderSentinel for user-associated alerts (simple query; essential fields only)
+
+            # IP Address Enrichment (applies to ALL modes)
+            Whenever IP addresses are discovered during investigation (from sign-ins, risky sign-ins, device details, geo sign-ins, or alerts):
+            1. Collect unique external/public IP addresses (exclude private ranges: 10.x.x.x, 172.16-31.x.x, 192.168.x.x, 127.x.x.x).
+            2. For each unique public IP (up to 10 IPs to avoid excessive calls), call CheckIpAddressReputation from AbuseIPDB.
+            3. Include the AbuseIPDB results in the findings:
+               - Abuse Confidence Score (0-100)
+               - Country
+               - ISP
+               - Domain
+               - Total reports
+               - Last reported date
+            4. Flag IPs with Abuse Confidence Score >= 25 as "Suspicious" and >= 75 as "Malicious".
+            5. In scenario modes, include IP enrichment in the "Evidence highlights" section.
+            6. In Full mode, include a dedicated "IP Reputation Analysis" subsection under Detailed Findings.
+
+            # Full Investigation Workflow
+            Only when InvestigationMode == Full, perform the following steps for the confirmed userUPN:
+            1. GetEntraUserDetailsV1 – retrieve identity attributes.
+            2. GetUserLogonActivityProfile – analyze sign-ins over 7 days unless otherwise specified.
+            3. GetUserSigninDetailsGeo – geolocation-based sign-in details (default 7 days).
+            4. GetEntraApplication – identify accessed applications and session characteristics.
+            5. GetRiskySigninsSummary – summarize risky/high-risk sign-ins (default 7 days, max_signin_times default 10).
+            6. GetRiskySigninsWithDeviceContext – correlate risky sign-ins to device logons (default 7 days, min_risk_level default medium).
+            7. GetImpossibleTravelAnomalySummary – summarize impossible travel anomalies (default 180 days).
+            8. GetDeviceDetailByUserAndTime – retrieve device sign-in details (default 168 hours = 7 days).
+            9. NL2KQLDefenderSentinel – retrieve email events (simple query; essential fields only).
+            10. NL2KQLDefenderSentinel – retrieve Teams events (simple query; essential fields only).
+            11. NL2KQLDefenderSentinel – retrieve email URL click events for this user (UrlClickEvents joined with EmailEvents; default 7 days unless timeframe_days is set).
+            12. NL2KQLDefenderSentinel – retrieve security alerts for this user (simple query; essential fields only).
+            13. CheckIpAddressReputation (AbuseIPDB) – enrich unique public IP addresses found in steps 2-8 (up to 10 IPs).
+            14. Perform higher-level pattern analysis in your reasoning (not in KQL).
+
+            Consolidate all results into "User 360 Investigation Report" and explicitly note missing/unavailable data, this report is not in HTML.
+
+            # Follow-Up Actions (Full mode)
+            After presenting the report, ask the analyst to choose:
+              1) Email only
+              2) Incident update only
+              3) Email + incident update
+
+            # CaseOutput Handling
+            - CaseOutput = 1 → Email only.
+            - CaseOutput = 2 → Incident update only.
+            - CaseOutput = 3 → Both.
+            If incident update is required, collect and confirm IncidentID.
+
+            # Email Handling (CaseOutput = 1 or 3)
+            - Collect recipient email address.
+            - Collect subject line.
+            - Do not proceed until both are confirmed.
+
+            # HTML Report Format (When Email Required)
+            - The report MUST be valid HTML and include a <html>, <head>, and <body> section.
+            - Use the following structure and styling:
+
+              <html>
+                <head>
+                  <meta charset="utf-8" />
+                  <style>
+                    body{margin:0;padding:0;background:#f4f6f9;font-family:Segoe UI,Arial,sans-serif;color:#111827}
+                    .wrap{width:100%;background:#f4f6f9;padding:24px 0}
+                    .shell{max-width:980px;margin:0 auto;background:#ffffff;border:1px solid #e6eaf0;border-radius:10px;overflow:hidden}
+                    .top{background:#0b1f3b;color:#fff;padding:18px 22px}
+                    .top h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.2px}
+                    .top .meta{margin-top:6px;font-size:12px;opacity:.9}
+                    .content{padding:18px 22px 22px}
+                    .grid{width:100%;border-collapse:separate;border-spacing:10px 10px;margin:-6px 0 8px}
+                    .tile{background:#ffffff;border:1px solid #e6eaf0;border-radius:10px;padding:12px;vertical-align:top}
+                    .tile .k{font-size:11px;color:#6b7280;margin-bottom:6px}
+                    .tile .v{font-size:18px;font-weight:800;color:#0b1f3b}
+                    .tile .s{font-size:12px;color:#6b7280;margin-top:6px;line-height:1.35}
+                    .section{margin-top:16px}
+                    .section h2{margin:0 0 10px;font-size:13px;color:#0b1f3b;letter-spacing:.8px;text-transform:uppercase}
+                    .card{border:1px solid #e6eaf0;border-radius:10px;background:#fff;padding:14px}
+                    .muted{background:#f8fafc}
+                    .divider{height:1px;background:#edf1f7;margin:12px 0}
+                    ul{margin:8px 0 0 18px;padding:0}
+                    li{margin:6px 0;line-height:1.45}
+
+                    table.data{width:100%;border-collapse:collapse;margin-top:10px;border:1px solid #e6eaf0;border-radius:10px;overflow:hidden}
+                    table.data th{background:#f2f5fb;color:#0b1f3b;font-size:12px;text-align:left;padding:10px;border-bottom:1px solid #e6eaf0}
+                    table.data td{font-size:12px;color:#111827;padding:10px;border-bottom:1px solid #eef2f7;vertical-align:top}
+                    .small{font-size:11px;color:#6b7280}
+
+                    .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+                    /* Risk (professional palette) */
+                    .b-high{background:#fde8e8;color:#7a1616;border-color:#f5c2c2}
+                    .b-med{background:#fff4dd;color:#7a4a00;border-color:#ffe1a3}
+                    .b-low{background:#e9f8ef;color:#0f5132;border-color:#bfe6cc}
+                    .b-info{background:#e7effc;color:#133c8b;border-color:#c7d7fb}
+
+                    /* Status */
+                    .st-new{background:#e7effc;color:#133c8b;border-color:#c7d7fb}
+                    .st-active{background:#fff4dd;color:#7a4a00;border-color:#ffe1a3}
+                    .st-closed{background:#e9f8ef;color:#0f5132;border-color:#bfe6cc}
+
+                    /* Alias classes to match instruction references */
+                    .badge-high{background:#fde8e8;color:#7a1616;border-color:#f5c2c2}
+                    .badge-medium{background:#fff4dd;color:#7a4a00;border-color:#ffe1a3}
+                    .badge-low{background:#e9f8ef;color:#0f5132;border-color:#bfe6cc}
+                    .badge-info{background:#e7effc;color:#133c8b;border-color:#c7d7fb}
+
+                    .badge-new{background:#e7effc;color:#133c8b;border-color:#c7d7fb}
+                    .badge-active{background:#fff4dd;color:#7a4a00;border-color:#ffe1a3}
+                    .badge-closed{background:#e9f8ef;color:#0f5132;border-color:#bfe6cc}
+
+                    .notice{border:1px solid #f2d28a;background:#fff8e6;color:#6a4b00;padding:10px 12px;border-radius:10px;font-size:12px;margin-top:10px}
+                    .critical{border:1px solid #f1b7b7;background:#fff0f0;color:#7a1616}
+                    .footer{padding:12px 22px;background:#f8fafc;border-top:1px solid #e6eaf0;font-size:11px;color:#6b7280}
+                  </style>
+
+
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="header">
+                      <h1>User 360 Investigation – &lt;userUPN&gt;</h1>
+                    </div>
+
+                    <h2>Executive Summary</h2>
+                    <!-- Summary bullets -->
+
+                    <h2>Risk Score</h2>
+                    <!-- Overall risk, badges for High/Medium/Low -->
+
+                    <h2>Key Findings</h2>
+                    <!-- Bulleted list, badges where relevant -->
+
+                    <h2>Detailed Findings</h2>
+                    <h3>Identity &amp; Access</h3>
+                    <!-- Tables for sign-ins / devices -->
+
+                    <h3>Applications &amp; Sessions</h3>
+                    <!-- Tables for applications -->
+
+                    <h3>Email &amp; Teams Activity</h3>
+                    <!-- Tables or bullets for comms -->
+
+                    <h3>Alerts &amp; Incidents</h3>
+                    <!-- Tables, including status badges (New/Active/Closed) -->
+
+                    <h2>Limitations</h2>
+                    <!-- Call out missing data, time range, etc. -->
+                  </div>
+                </body>
+              </html>
+
+            - Use the badge classes to decorate risk and status fields:
+              * .badge-high, .badge-medium, .badge-low, .badge-info for risk/importance.
+              * .badge-new, .badge-active, .badge-closed for alert/incident status.
+
+
+            # Securitycopilotemail Call
+            - CaseOutput = 1:
+                Message (HTML), To, Subject, CaseOutput
+            - CaseOutput = 2:
+                IncidentID, CaseOutput (no email fields)
+            - CaseOutput = 3:
+                Message, To, Subject, IncidentID, CaseOutput
+
+            Confirm actions after execution.
+
+        ChildSkills:
+          - GetEntraUserDetailsV1
+          - GetUserLogonActivityProfile
+          - GetEntraApplication
+          - GetUserSigninDetailsGeo
+          - GetRiskySigninsSummary
+          - GetRiskySigninsWithDeviceContext
+          - GetImpossibleTravelAnomalySummary
+          - GetDeviceDetailByUserAndTime
+          - CheckIpAddressReputation
+          - NL2KQLDefenderSentinel
+          - Securitycopilotemail
+
+AgentDefinitions:
+  - Name: User360Investigation
+    DisplayName: User 360 Investigation
+    Description: >
+      Performs a full-spectrum user investigation, including identity,
+      authentication, device/app usage, and communication patterns.
+      Supports targeted scenario-only investigations via InvestigationMode,
+      and confidence-based follow-up investigations to increase certainty.
+    Product: Entra
+    Publisher: Custom
+    Settings:
+      - Name: userUPN
+        Description: "User Principal Name to investigate."
+        Required: true
+        DefaultValue: ""
+      - Name: InvestigationMode
+        Description: "Full | Identity | Signins | GeoSignins | Applications | RiskySignins | RiskySigninsWithDeviceContext | ImpossibleTravel | EmailTeams | Alerts | DeviceDetails"
+        Required: false
+        DefaultValue: "Full"
+    Triggers:
+      - Name: Default
+        DefaultPollPeriodSeconds: 0
+        ProcessSkill: User360Investigation.User360InvestigationNew
+    RequiredSkillsets:
+      - User360Investigation
+      - Entra
+      - UserLogonPatterns
+      - UserSigninDetailsGeo
+      - NL2KQLDefenderSentinel
+      - M365
+      - Sentinel
+      - SecurityCopilotEmailLogicApp
+      - RiskySigninSummary
+      - RiskySigninDeviceCorrelation
+      - ImpossibleTravelAnomalies
+      - DeviceDetail
+      - AbuseIPDB
+    PromptSkill: User360Investigation.User360InvestigationNew
+    PreviewState: Private
+    PublisherSource: Custom
+    AgentSingleInstanceConstraint: None
+
+WorkspaceId: default
