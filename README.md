@@ -17,4 +17,3 @@ Current state of the repository:
 
 ## Notes
 Microsoft Security Solutions
-``
